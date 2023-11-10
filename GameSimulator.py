@@ -23,6 +23,13 @@ def buildDeck():
             deck.append([key, suit])
     return deck
 
+def findMinCardValue(cardList):
+    min = 12
+    for card in cardList:
+        if cardSymbolValDict[card[0]] < min:
+            min = cardSymbolValDict[card[0]]
+    return min
+
 def calcAveHandValue(num):
     random.seed()
 
@@ -82,17 +89,21 @@ def calcAveHandValue(num):
             aveValue += handValueCount[i]/sum * i
     return aveValue 
 
-def aveValueAdd(num):
+#Average value of a hand when drawing a card from the deck
+def calcAveHandValueDraw(num):
     random.seed()
 
     deck = buildDeck()
     blitzDeck = 2 * deck
+    handValueCount = [0] * 32
 
     for i in range(num):
         random.shuffle(blitzDeck)
         suitValues = [0,0,0,0] #Spades, Clubs, Hearts, Diamonds
         aceSeen = [False,False,False,False] #Spades, Clubs, Hearts, Diamonds
-        for i in range(3):
+
+        #If all cards are of the same suit we take out lowest card from sum. if they aren't, calculation remains the same as if they were just three cards.
+        for i in range(4):
             if (blitzDeck[i][1] == "Spades"):
                 if (blitzDeck[i][0] == "A"):
                     if (aceSeen[0]):
@@ -129,7 +140,23 @@ def aveValueAdd(num):
                         aceSeen[3] = True
                 else:
                     suitValues[3] += cardSymbolValDict[blitzDeck[i][0]] 
+        if (blitzDeck[0][1] == blitzDeck[1][1] and blitzDeck[0][1] == blitzDeck[2][1] and blitzDeck[0][1] == blitzDeck[3][1]): #If all cards share suit, remove lowest card value
+            handValueCount[max(suitValues) - findMinCardValue(blitzDeck[:4])] += 1
+        else:
+            handValueCount[max(suitValues)] += 1
+
+    sum = 0
+    for hvCount in handValueCount:
+        sum += hvCount
+    aveValue = 0
+    for i in range(len(handValueCount)):
+        if (i != 0):
+            aveValue += handValueCount[i]/sum * i
+    return aveValue 
+        
+            
 
 
 
-print(calcAveHandValue(10000))
+#print(calcAveHandValue(10000))
+print(calcAveHandValueDraw(10000))
