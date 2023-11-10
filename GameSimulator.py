@@ -21,6 +21,7 @@ def buildDeck():
     for suit in suitSet:
         for key in cardSymbolValDict:
             deck.append([key, suit])
+    return deck
 
 def calcAveHandValue(num):
     random.seed()
@@ -131,4 +132,4 @@ def aveValueAdd(num):
 
 
 
-print(calcAveHandValue(100))
+print(calcAveHandValue(10000))
