@@ -32,8 +32,7 @@ def buildDeck():
 
 def calcHandValue(cards):
     if (len(cards) < 3):
-        print("list of cards to small")
-        return
+        raise Exception("Not enough cards")
     suitCardValList = [[],[],[],[]]  
     
     for i in range(len(cards)):
@@ -41,19 +40,12 @@ def calcHandValue(cards):
             suitCardValList[cards[i][1]].append(1)
         else:
             suitCardValList[cards[i][1]].append(cards[i][0])
-
-    maxHV = 0 #HV Hand Value
-    maxIDX = -1
-    for cardList in suitCardValList:
-        if sum(cardList) > maxHV:
-            maxHV = sum(cardList)
-            maxIDX = suitCardValList.index(cardList)
     
-    #If we are testing for best 3 of 4 cards (hand after we draw) we need to subtract lowest card val from winning suit if all four cards are in winning suit
-    if (len(cards) == 4 and cards[0][1] == cards[1][1] and cards[0][1] == cards[2][1] and cards[0][1] == cards[3][1]): 
-        minCard = min(suitCardValList[maxIDX])
-        return maxHV - min(suitCardValList[maxIDX])
-    return maxHV
+    return max([sum(suitCardValList[0]),sum(suitCardValList[1]),sum(suitCardValList[2]),sum(suitCardValList[3])])
+
+#Calculating best three cards from a four card hand, to calculate EV of hand after a draw
+def best3CardHandFrom4(list):
+    return max(calcHandValue(list[:3]),calcHandValue(list[1:4]),calcHandValue([list[0],list[1],list[3]]),calcHandValue([list[0],list[2],list[3]]))
 
 def calcAveOfValList(list):
     sum = 0
@@ -65,17 +57,16 @@ def calcAveOfValList(list):
             aveValue += (list[i]/sum) * i
     return aveValue 
 
-def calcAveHandValue(num,afterdraw): 
+def calcAveHandValue(num): 
     random.seed()
     deck = buildDeck()
     blitzDeck = 2 * deck
-    
-    n = 3 + afterdraw #Use 4 cards for calculating hands after a draw from the deck, 3 otherwise, using afterdraw arg to control
 
     handValueCount = [0] * 32
     for i in range(num):
         random.shuffle(blitzDeck)
-        handValueCount[calcHandValue(blitzDeck[:n])] += 1 
+        max([calcHandValue(blitzDeck[:3])])
+        handValueCount[calcHandValue(blitzDeck[:3])] += 1 
     
     return calcAveOfValList(handValueCount) 
 
@@ -89,12 +80,11 @@ def aveIncreaseFromDrawing(num):
 
     for i in range(num):
         random.shuffle(blitzDeck)
-        handValueIncreaseCount[(calcHandValue(blitzDeck[:4]) - calcHandValue(blitzDeck[:3]))] += 1
+        handValueIncreaseCount[(best3CardHandFrom4(blitzDeck[:4]) - calcHandValue(blitzDeck[:3]))] += 1
 
     return calcAveOfValList(handValueIncreaseCount)      
 
 
 
-print(calcAveHandValue(10000,False))
-print(calcAveHandValue(10000,True))
+print(calcAveHandValue(10000))
 print(aveIncreaseFromDrawing(10000))
