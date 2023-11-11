@@ -1,162 +1,100 @@
 import random
-suitSet = {"Spades","Clubs","Hearts","Diamonds"}
-cardSymbolValDict = {
-    "2":2,
-    "3":3,
-    "4":4,
-    "5":5,
-    "6":6,
-    "7":7,
-    "8":8,
-    "9":9,
-    "10":10,
-    "J":10,
-    "Q":10,
-    "K":10,
-    "A":11
-}
+from enum import IntEnum
+
+#Using Enums for suits and symbols for ease of debugging
+class Suits(IntEnum):
+    SPADES = 0
+    CLUBS = 1
+    HEARTS = 2
+    DIAMONDS = 3 
+class Symbols(IntEnum):
+    TWO=2
+    THREE=3
+    FOUR=4
+    FIVE=5
+    SIX=6
+    SEVEN=7
+    EIGHT=8
+    NINE=9
+    TEN=10
+    JACK=10
+    QUEEN=10
+    KING=10
+    ACE=11
+
 
 def buildDeck():
     deck = []
-    for suit in suitSet:
-        for key in cardSymbolValDict:
-            deck.append([key, suit])
+    for suit in Suits:
+        for symbol in Symbols:
+            deck.append([symbol, suit])
     return deck
 
-def findMinCardValue(cardList):
-    min = 12
-    for card in cardList:
-        if cardSymbolValDict[card[0]] < min:
-            min = cardSymbolValDict[card[0]]
-    return min
-
-def calcAveHandValue(num):
-    random.seed()
-
-    deck = buildDeck()
-    blitzDeck = 2 * deck
+def calcHandValue(cards):
+    if (len(cards) < 3):
+        print("list of cards to small")
+        return
+    suitCardValList = [[],[],[],[]]  
     
-    handValueCount = [0] * 32
-    for i in range(num):
-        random.shuffle(blitzDeck)
-        suitValues = [0,0,0,0] #Spades, Clubs, Hearts, Diamonds
-        aceSeen = [False,False,False,False] #Spades, Clubs, Hearts, Diamonds
-        for i in range(3):
-            if (blitzDeck[i][1] == "Spades"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[0]):
-                        suitValues[0] += 1
-                    else:
-                        suitValues[0] += 11
-                        aceSeen[0] = True
-                else:
-                    suitValues[0] += cardSymbolValDict[blitzDeck[i][0]]
-            elif (blitzDeck[i][1] == "Clubs"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[1]):
-                        suitValues[1] += 1
-                    else:
-                        suitValues[1] += 11
-                        aceSeen[1] = True
-                else:
-                    suitValues[1] += cardSymbolValDict[blitzDeck[i][0]]
-            elif (blitzDeck[i][1] == "Hearts"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[2]):
-                        suitValues[2] += 1
-                    else:
-                        suitValues[2] += 11
-                        aceSeen[2] = True
-                else:
-                    suitValues[2] += cardSymbolValDict[blitzDeck[i][0]] 
-            elif (blitzDeck[i][1] == "Diamonds"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[3]):
-                        suitValues[3] += 1
-                    else:
-                        suitValues[3] += 11
-                        aceSeen[3] = True
-                else:
-                    suitValues[3] += cardSymbolValDict[blitzDeck[i][0]] 
-        handValueCount[max(suitValues)] += 1
-    
-    sum = 0
-    for hvCount in handValueCount:
-        sum += hvCount
-    aveValue = 0
-    for i in range(len(handValueCount)):
-        if (i != 0):
-            aveValue += handValueCount[i]/sum * i
-    return aveValue 
-
-#Average value of a hand when drawing a card from the deck
-def calcAveHandValueDraw(num):
-    random.seed()
-
-    deck = buildDeck()
-    blitzDeck = 2 * deck
-    handValueCount = [0] * 32
-
-    for i in range(num):
-        random.shuffle(blitzDeck)
-        suitValues = [0,0,0,0] #Spades, Clubs, Hearts, Diamonds
-        aceSeen = [False,False,False,False] #Spades, Clubs, Hearts, Diamonds
-
-        #If all cards are of the same suit we take out lowest card from sum. if they aren't, calculation remains the same as if they were just three cards.
-        for i in range(4):
-            if (blitzDeck[i][1] == "Spades"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[0]):
-                        suitValues[0] += 1
-                    else:
-                        suitValues[0] += 11
-                        aceSeen[0] = True
-                else:
-                    suitValues[0] += cardSymbolValDict[blitzDeck[i][0]]
-            elif (blitzDeck[i][1] == "Clubs"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[1]):
-                        suitValues[1] += 1
-                    else:
-                        suitValues[1] += 11
-                        aceSeen[1] = True
-                else:
-                    suitValues[1] += cardSymbolValDict[blitzDeck[i][0]]
-            elif (blitzDeck[i][1] == "Hearts"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[2]):
-                        suitValues[2] += 1
-                    else:
-                        suitValues[2] += 11
-                        aceSeen[2] = True
-                else:
-                    suitValues[2] += cardSymbolValDict[blitzDeck[i][0]] 
-            elif (blitzDeck[i][1] == "Diamonds"):
-                if (blitzDeck[i][0] == "A"):
-                    if (aceSeen[3]):
-                        suitValues[3] += 1
-                    else:
-                        suitValues[3] += 11
-                        aceSeen[3] = True
-                else:
-                    suitValues[3] += cardSymbolValDict[blitzDeck[i][0]] 
-        if (blitzDeck[0][1] == blitzDeck[1][1] and blitzDeck[0][1] == blitzDeck[2][1] and blitzDeck[0][1] == blitzDeck[3][1]): #If all cards share suit, remove lowest card value
-            handValueCount[max(suitValues) - findMinCardValue(blitzDeck[:4])] += 1
+    for i in range(len(cards)):
+        if 11 in suitCardValList[cards[i][1]] and cards[i][0] == 11: #If current card is the second ace, it is worth 1 not 11.
+            suitCardValList[cards[i][1]].append(1)
         else:
-            handValueCount[max(suitValues)] += 1
+            suitCardValList[cards[i][1]].append(cards[i][0])
 
+    maxHV = 0 #HV Hand Value
+    maxIDX = -1
+    for cardList in suitCardValList:
+        if sum(cardList) > maxHV:
+            maxHV = sum(cardList)
+            maxIDX = suitCardValList.index(cardList)
+    
+    #If we are testing for best 3 of 4 cards (hand after we draw) we need to subtract lowest card val from winning suit if all four cards are in winning suit
+    if (len(cards) == 4 and cards[0][1] == cards[1][1] and cards[0][1] == cards[2][1] and cards[0][1] == cards[3][1]): 
+        minCard = min(suitCardValList[maxIDX])
+        return maxHV - min(suitCardValList[maxIDX])
+    return maxHV
+
+def calcAveOfValList(list):
     sum = 0
-    for hvCount in handValueCount:
-        sum += hvCount
+    for val in list:
+        sum += val
     aveValue = 0
-    for i in range(len(handValueCount)):
+    for i in range(len(list)):
         if (i != 0):
-            aveValue += handValueCount[i]/sum * i
+            aveValue += (list[i]/sum) * i
     return aveValue 
+
+def calcAveHandValue(num,afterdraw): 
+    random.seed()
+    deck = buildDeck()
+    blitzDeck = 2 * deck
+    
+    n = 3 + afterdraw #Use 4 cards for calculating hands after a draw from the deck, 3 otherwise, using afterdraw arg to control
+
+    handValueCount = [0] * 32
+    for i in range(num):
+        random.shuffle(blitzDeck)
+        handValueCount[calcHandValue(blitzDeck[:n])] += 1 
+    
+    return calcAveOfValList(handValueCount) 
+
         
-            
+def aveIncreaseFromDrawing(num):
+    random.seed()
+
+    deck = buildDeck()
+    blitzDeck = 2 * deck
+    handValueIncreaseCount = [0] * 32
+
+    for i in range(num):
+        random.shuffle(blitzDeck)
+        handValueIncreaseCount[(calcHandValue(blitzDeck[:4]) - calcHandValue(blitzDeck[:3]))] += 1
+
+    return calcAveOfValList(handValueIncreaseCount)      
 
 
 
-#print(calcAveHandValue(10000))
-print(calcAveHandValueDraw(10000))
+print(calcAveHandValue(10000,False))
+print(calcAveHandValue(10000,True))
+print(aveIncreaseFromDrawing(10000))
