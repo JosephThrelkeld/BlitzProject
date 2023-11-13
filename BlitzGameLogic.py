@@ -24,11 +24,15 @@ class Symbols(IntEnum):
     ACE=11
 
 class Card:
-    symbol = -1
-    suit = -1
+    __symbol = -1
+    __suit = -1
+    def getSymbol(self):
+        return self.__symbol
+    def getSuit(self):
+        return self.__suit
     def __init__(self, symbolIn, suitIn):
-        self.symbol = symbolIn
-        self.suit = suitIn
+        self.__symbol = symbolIn
+        self.__suit = suitIn
 
 class Player:
     __hand = []
@@ -46,31 +50,42 @@ class Player:
     def getHandCards(self):
         handList = []
         for card in self.__hand:
-            handList.append([card.symbol, card.suit])
+            handList.append([card.getSymbol(), card.getSuit()])
         return handList
     def getHandValue(self):
         return BlitzGame.calcHandValue(self.__hand)
     #For drawing new cards with a full hand, preserves strongest three card hand out of original hand and new card
     #Returns a card to allow blitzgame to put card in discard pile
-    #Discards card that isn't part of max 3 card hand that is found, defaults to first 3 max card hand found first (for now).
+    #Discards card that isn't part of one of the potential max hands. Defaults to lowest card value and lowest suit value (as defined by enum: SPADES=0 CLUBS=1 ...)
     def drawDiscard(self, card):
+        maxHand = []
         max = 0
+        
         cardToRemove = -1
+        ogHand = self.__hand
         for i in range(4):
+                
             potentialHand = self.__hand + [card]
             cardLeftOut = potentialHand[i]
             del potentialHand[i]
+            
+            #Could be one if statement but would be unreadable
             if BlitzGame.calcHandValue(potentialHand) > max:
-                max = BlitzGame.calcHandValue(potentialHand)
+                maxHand = potentialHand
+                max = BlitzGame.calcHandValue(maxHand)
                 cardToRemove = cardLeftOut
-        potentialHand = self.__hand + [card]
-        potentialHand.remove(cardToRemove)
-        self.__hand = potentialHand
+            elif BlitzGame.calcHandValue(potentialHand) == max and (cardLeftOut.getSymbol() < cardToRemove.getSymbol() or cardLeftOut.getSuit() < cardToRemove.getSuit()):
+                maxHand = potentialHand
+                max = BlitzGame.calcHandValue(maxHand)
+                cardToRemove = cardLeftOut
+    
+        self.__hand = maxHand
+        a = BlitzGame.calcHandValue(self.__hand)
+        b = BlitzGame.calcHandValue(ogHand)
         if (len(self.__hand) != 3):
             raise Exception("Hand does not have three cards in it")
         return cardToRemove
             
-        
 
             
 
@@ -83,20 +98,19 @@ class BlitzGame:
     __playerKnocked = False
     __roundActive = False
     #Setting apart player list and playerOrder list to allow latter to only store players who haven't lost in full game sim
-    __activePlayers = []
     __currentPlayerIDX = -1
     
     #Putting hand value calculation in blitz game class for testing and stat gathering without having to use player hands
     @classmethod
     def calcHandValue(self, handList):
         if (len(handList) != 3):
-            raise Exception("Wrong number of cards in hand")
+            raise ValueError("Wrong number of cards in hand")
         suitCardValList = [[],[],[],[]]
         for i in range(len(handList)):
-            if 11 in suitCardValList[handList[i].suit] and handList[i].symbol == 11: #If current card is the second ace in suit, it is worth 1 not 11.
-                suitCardValList[handList[i].suit].append(1) #Creating seperate enum just for second ace seems unneccessarry for now, just using 1.
+            if 11 in suitCardValList[handList[i].getSuit()] and handList[i].getSymbol() == 11: #If current card is the second ace in getSuit(), it is worth 1 not 11.
+                suitCardValList[handList[i].getSuit()].append(1) #Creating seperate enum just for second ace seems unneccessarry for now, just using 1.
             else:
-                suitCardValList[handList[i].suit].append(handList[i].symbol)
+                suitCardValList[handList[i].getSuit()].append(handList[i].getSymbol())
         return max(sum(suitCardValList[0]),sum(suitCardValList[1]),sum(suitCardValList[2]),sum(suitCardValList[3]))
     
     def __init__(self, numPlayers):
@@ -127,8 +141,8 @@ class BlitzGame:
     def setupRound(self):
         self.__currentPlayerIDX = 0
         self.__setDeck()
+        self.__discardPile = deque([])
         self.__roundActive = False
-        self.__activePlayers = self.__players
         self.__shuffleDeck()
         for player in self.__players:
             handInsert = []
@@ -139,19 +153,16 @@ class BlitzGame:
          
     #Seperating setup round and run round to allow for easy collection of statistics about starting states of rounds         
     def runRoud(self, timeLimit):
-        self.setupRound()
         self.__roundActive = True
         while self.__roundActive:
             #print(self.getPlayerHandCards())
-            print(self.getPlayerHandValues())
-            activePlayer = self.__activePlayers[self.__currentPlayerIDX]
-            #TODO: have players make choice between drawing from different piles and knocking 
+            #print(self.getPlayerHandValues())
             
-            discardCard = activePlayer.drawDiscard(self.__deck.popleft())
+            discardCard = self.__players[self.__currentPlayerIDX].drawDiscard(self.__deck.popleft()) #TODO: have players make choice between drawing from different piles and knocking 
             self.__discardPile.appendleft(discardCard)
             
             
-            if self.__currentPlayerIDX == len(self.__activePlayers) - 1:
+            if self.__currentPlayerIDX == len(self.__players) - 1:
                 self.__currentPlayerIDX = 0
             else:
                 self.__currentPlayerIDX += 1
@@ -165,6 +176,7 @@ class BlitzGame:
             #Ending when no deck is left 
             if len(self.__deck) == 0:
                 self.__roundActive = False
+        
             
     
     def runGame(self):
