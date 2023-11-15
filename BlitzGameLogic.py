@@ -133,6 +133,8 @@ class BlitzGame:
         for player in self.__players:
             valueList.append(player.getHandValue())
         return valueList
+    def getTopCardValDiscardPile(self):
+        return self.__discardPile[0].getSymbol()
     def __shuffleDeck(self):
         random.seed()
         random.shuffle(self.__deck)
@@ -152,7 +154,7 @@ class BlitzGame:
         self.__discardPile.appendleft(self.__deck.popleft())
          
     #Seperating setup round and run round to allow for easy collection of statistics about starting states of rounds         
-    def runRoud(self, timeLimit):
+    def runRoud(self, timeLimit): #Time limit defines extra rounds apart from the first (for now)
         self.__roundActive = True
         while self.__roundActive:
             #print(self.getPlayerHandCards())
