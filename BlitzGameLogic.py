@@ -25,15 +25,16 @@ class Symbols(IntEnum):
     ACE=11
 
 class Card:
-    __symbol = -1
-    __suit = -1
     def getSymbol(self):
-        return self.__symbol
+        return self.symbol
     def getSuit(self):
-        return self.__suit
+        return self.suit
     def __init__(self, symbolIn, suitIn):
-        self.__symbol = symbolIn
-        self.__suit = suitIn
+        self.symbol = symbolIn
+        self.suit = suitIn
+    def __deepcopy__(self, memo):
+        newcard = Card(self.symbol, self.suit)
+        return newcard
 
 class Player:
     __hand = []
@@ -92,22 +93,15 @@ class Player:
 
 
 class BlitzGame:
-    __deck = deque([])
-    __discardPile = deque([])
-    __players = []
-    __playerKnocked = False
-    __turnsLeft = -1
-    __roundActive = False
-    __currentPlayerIDX = -1
     def __init__(self, numPlayers):
-        __deck = deque([])
-        __discardPile = deque([])
-        __players = []
-        __playerKnocked = False
-        __turnsLeft = -1
-        __roundActive = False
+        self.__deck = deque([])
+        self.__discardPile = deque([])
+        self.__players = []
+        self.__playerKnocked = False
+        self.__turnsLeft = -1
+        self.__roundActive = False
         #Setting apart player list and playerOrder list to allow latter to only store players who haven't lost in full game sim
-        __currentPlayerIDX = -1
+        self.__currentPlayerIDX = -1
         self.__setDeck()
         for i in range(numPlayers):
             self.__players.append(Player())
@@ -127,13 +121,15 @@ class BlitzGame:
 
     def copySelf(self):
         newGame = BlitzGame(0)
-        newGame.__deck = copy.copy(self.__deck)
-        newGame.__discardPile = copy.copy(self.__discardPile)
-        newGame.__players = copy.copy(self.__players)
-        newGame.__playerKnocked = copy.copy(self.__playerKnocked)
-        newGame.__turnsLeft = copy.copy(self.__turnsLeft)
-        newGame.__roundActive = copy.copy(self.__roundActive)
-        newGame.__currentPlayerIDX = copy.copy(self.__currentPlayerIDX)
+        newGame.__deck = copy.deepcopy(self.__deck)
+        newGame.__discardPile = copy.deepcopy(self.__discardPile)
+        newGame.__players = copy.deepcopy(self.__players)
+        newGame.__playerKnocked = copy.deepcopy(self.__playerKnocked)
+        newGame.__turnsLeft = copy.deepcopy(self.__turnsLeft)
+        newGame.__roundActive = copy.deepcopy(self.__roundActive)
+        newGame.__currentPlayerIDX = copy.deepcopy(self.__currentPlayerIDX)
+        if len(newGame.__players) > 2:
+            raise Exception("This ain't right")
         return newGame
                 
     def __setDeck(self):
@@ -146,8 +142,9 @@ class BlitzGame:
         if (len(self.__deck) != 0):
             raise Exception("Deck is not empty")
         self.__deck = copy.copy(self.__discardPile)
-        self.__discardPile = []
+        self.__discardPile = deque([])
         self.__shuffleDeck()
+        self.__discardPile.appendleft(self.__deck.popleft())
     
     def decrementTurnsLeft(self):
         self.__turnsLeft -= 1
@@ -207,6 +204,8 @@ class BlitzGame:
         self.__turnsLeft = len(self.__players) - 1    
     
     def advanceActivePlayerIDX(self):
+        if self.__currentPlayerIDX > len(self.__players) - 1:
+            raise Exception("This ain't right")
         if self.__currentPlayerIDX == len(self.__players) - 1:
                 self.__currentPlayerIDX = 0
         else:
