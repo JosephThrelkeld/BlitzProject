@@ -192,9 +192,12 @@ class BlitzGame:
          
     #Seperating setup round and run round to allow for easy collection of statistics about starting states of rounds         
     
-    def drawCardActivePlayer(self):
+    def drawCardActivePlayer(self): #Returning hand increase for statistics gathering
+        pastVal = self.__players[self.__currentPlayerIDX].getHandValue()
         discardCard = self.__players[self.__currentPlayerIDX].drawDiscard(self.__deck.popleft())
+        newVal = self.__players[self.__currentPlayerIDX].getHandValue()
         self.__discardPile.appendleft(discardCard)
+        return newVal - pastVal
     
     def pickDicardCardActivePlayer(self):
         discardCard = self.__players[self.__currentPlayerIDX].drawDiscard(self.__discardPile.popleft())

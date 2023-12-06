@@ -17,7 +17,8 @@ def backInduction():
     startGame = BlitzGame(2)
     startGame.setupRound()
     
-    myGameTree = buildTreeRecurse(startGame, 10)
+    myGameTree = buildTreeRecurse(startGame, 0, 1)
+
     return backtrackRecurse(myGameTree)
     
 
@@ -32,18 +33,20 @@ def backtrackRecurse(currNode):
         if currNode.gameState.getPlayers()[0].getHandValue() > currNode.gameState.getPlayers()[1].getHandValue():
             return [1,-1]
         else:
-            return [-1,1] 
+            return [-1,1]
     else:
         resultsArr = []
         if currNode.knockChild != None:
             resultsArr.append(backtrackRecurse(currNode.knockChild))
             if (resultsArr[-1][currPlayerIDX] == 1):
-                #print(currPlayer.getHandValue())
                 knockHandValues[currPlayer.getHandValue()] += 1
+            else:
+                noKnockHandValues[currPlayer.getHandValue()] += 1
         if currNode.drawChild != None:
             resultsArr.append(backtrackRecurse(currNode.drawChild))
         if currNode.pickDiscardChild != None:
             resultsArr.append(backtrackRecurse(currNode.pickDiscardChild))
+        
         
         maxResult = [-2,-2]
         for result in resultsArr:
@@ -56,16 +59,16 @@ def backtrackRecurse(currNode):
          
 
 
-def buildTreeRecurse(currentGameState, depthAllowedLeft):
+def buildTreeRecurse(currentGameState, pickDiscardTimes, numRounds):
     #Base cases: player has blitz, person knocked and has returned to them
     currNode = GameStateNode(currentGameState)
-    #print(currNode.gameState.getPlayers()[0].getHandValue())
-    #print(currNode.gameState.getPlayers()[1].getHandValue())
-    #print(" ")
-    
-    currPlayer = currentGameState.getPlayers()[currentGameState.getCurrentPlayerIDX()]
-    if (depthAllowedLeft == 0):
+
+
+    addRound = currentGameState.getCurrentPlayerIDX() == 1 #If we are at end of player order (player 1) we need to add 1 to the round 
+    if (numRounds == 5):
         return currNode
+    if (numRounds > 5):
+        raise Exception("This shouldn't happen")
     if (currentGameState.getPlayers()[0].getHandValue() == 31 or currentGameState.getPlayers()[1].getHandValue() == 31):
         return currNode
     if (currentGameState.getPlayerKnocked()):
@@ -79,40 +82,75 @@ def buildTreeRecurse(currentGameState, depthAllowedLeft):
         gameAfterKnock = currentGameState.copySelf()
         gameAfterKnock.playerKnocks()
         gameAfterKnock.advanceActivePlayerIDX()
-        currNode.knockChild = buildTreeRecurse(gameAfterKnock, depthAllowedLeft - 1) 
+        currNode.knockChild = buildTreeRecurse(gameAfterKnock, 0, numRounds + addRound) 
         
     #If deck is empty, we need to reshuffle discard pile into the deck again
     if (currentGameState.getDeckSize() == 0):
         currentGameState.reshuffleDeck()
-            
+    
+    startingHandVal = currentGameState.getPlayers()[currentGameState.getCurrentPlayerIDX()].getHandValue()
     gameAfterDraw = currentGameState.copySelf()
-    gameAfterDraw.drawCardActivePlayer()
+    handValIncrease = gameAfterDraw.drawCardActivePlayer()
     gameAfterDraw.advanceActivePlayerIDX()
+    currentGameState.getPlayers()
+    drawIncreaseHandValueObs[startingHandVal].append(handValIncrease)
+    currNode.drawChild = buildTreeRecurse(gameAfterDraw, 0, numRounds + addRound)
     
-    currNode.drawChild = buildTreeRecurse(gameAfterDraw, depthAllowedLeft - 1)
-    
-    gameAfterPickDiscard = currentGameState.copySelf()
-    gameAfterPickDiscard.pickDicardCardActivePlayer()
-    gameAfterPickDiscard.advanceActivePlayerIDX()
-    
-    currNode.pickDiscardChild = buildTreeRecurse(gameAfterPickDiscard, depthAllowedLeft - 1)    
+    if pickDiscardTimes < 2:
+        gameAfterPickDiscard = currentGameState.copySelf()
+        gameAfterPickDiscard.pickDicardCardActivePlayer()
+        gameAfterPickDiscard.advanceActivePlayerIDX()
+        
+        currNode.pickDiscardChild = buildTreeRecurse(gameAfterPickDiscard, pickDiscardTimes + 1, numRounds + addRound)    
     
     return currNode
 
+
+#Keeping track of how many times each option is present and when it is or is not advantageous
+#Not keeping track of when results are [0,0] as it indicates unfinished path. 
 knockHandValues = [0] * 32
-#print(backInduction())
+noKnockHandValues = [0] * 32
+
+drawIncreaseHandValueObs = [[] for i in range(32)]
+
+knockPercentValues = [0] * 32
+
+
 
 sumOutcomes = [0,0]    
-for i in range(30):
+for i in range(1000):
+    print(i)
     currOutcome = backInduction()
-    sumOutcomes[0] += currOutcome[0]
-    sumOutcomes[1] += currOutcome[1]
+    if (currOutcome[0] == 1):
+        sumOutcomes[0] += 1
+    elif currOutcome[1] == 1:
+        sumOutcomes[1] += 1
+
+
+for i in range(len(knockPercentValues)):
+    if (knockHandValues[i] + noKnockHandValues[i]) != 0:
+        knockPercentValues[i] = (knockHandValues[i] / (knockHandValues[i] + noKnockHandValues[i])) * 100
+
+drawIncreaseHandValueAves = [0] * 32
+for i in range(len(drawIncreaseHandValueObs)):
+    if len(drawIncreaseHandValueObs[i]) != 0:
+        drawIncreaseHandValueAves[i] = sum(drawIncreaseHandValueObs[i]) / len(drawIncreaseHandValueObs[i])
+
 print(sumOutcomes)
 
-y = knockHandValues
+
+
 x = list(range(32))
 
+y1 = knockHandValues
+y2 = knockPercentValues
+y3 = drawIncreaseHandValueAves
+
 fig,ax= plt.subplots()
-ax.scatter(x,y)
-ax.set(xlim=(0,32),ylim=(0,1000))
+ax.bar(x,y2)
+ax.set(xlim=(0,32),ylim=(0,100))
+ax.set_ylabel("Percent")
+ax.set_xlabel("Hand Value")
+ax.set_title("Percent of Knock Children that lead to Positive Payoff Values\n 1000 tests, maximum depth of 5 rounds")
+
 plt.show()
